@@ -7,7 +7,7 @@ import os
 import scipy.signal as signal
 
 # ===================== Normalization =====================
-def normalization(x, type_norm="mu_law",mu=256):
+def normalization(x, type_norm="mu_law"):
     # input x : numpy, shape: (window_size, num_channel)
     # output y: numpy, shape: (window_size, num_channel)
 
@@ -24,7 +24,9 @@ def normalization(x, type_norm="mu_law",mu=256):
         min_val = np.min(x, axis=0)
         max_val = np.max(x, axis=0)
         y = (x - min_val)/(max_val-min_val)
-    elif type_norm == "mu_law":
+    elif "mu_law" in type_norm:
+        temp = type_norm.split("_")
+        mu = temp[-1]
         y = np.sign(x)*(np.log(1+mu*abs(x)))/(np.log(1+mu))
     else:
         raise TypeError(f'{type_norm} is not defined in type_norm')
@@ -67,19 +69,3 @@ def handle_concatenation(existing_array, new_data, axis=0):
         return new_data
     else:
         return np.concatenate((existing_array, new_data), axis=axis)
-
-def plot_FFT(x, Fs):
-    # Perform the FFT
-    n = len(x)  # Length of signal
-    freq_axis = np.arange(0, (Fs/2), Fs/n) # Create the frequency vector
-
-    # Plot the FFT
-    plt.figure(figsize=(12, 4))
-    for i in range(x.shape[1]):
-        X = np.fft.fft(x[:,i])/n  # FFT normalized by the number of samples
-        X = X[range(int(n/2))]  # Remove the symmetric part of the FFT
-        plt.plot(freq_axis, abs(X))
-
-    plt.xlabel('Frequency (Hz)')
-    plt.ylabel('Amplitude')
-    plt.show()

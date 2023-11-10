@@ -76,7 +76,7 @@ import time
 
 #     # return val_acc
 
-def train_process(args,model,model_PATH,train_loader,valid_loader,device,optimizer,criterion,scheduler=None):
+def train_process(num_epoch,model,model_PATH,train_loader,valid_loader,device,optimizer,criterion,scheduler=None):
     # Print the model summary
     # summary(model, (train_loader.dataset[0][0].shape))
     
@@ -90,7 +90,7 @@ def train_process(args,model,model_PATH,train_loader,valid_loader,device,optimiz
     loss_best = float("inf")
     not_better_count = 0    
     # print('', end='', flush=True)
-    for epoch in range(args.num_epoch):
+    for epoch in range(num_epoch):
         # end_type = '\n' if epoch==args.num_epoch-1 else '\r'
         end_type = '\n'
         
@@ -103,11 +103,6 @@ def train_process(args,model,model_PATH,train_loader,valid_loader,device,optimiz
         for i, (emg_sample, gesture_gold) in enumerate(train_loader):
             emg_sample = emg_sample.to(device) # input
             gesture_gold = gesture_gold.to(device) # Output
-
-            if args.model_type == "ViT":
-                # emg_sample = torch.unsqueeze(emg_sample.permute(0,2,1), dim=3)  # shape: (B, C, W, F) = (128, 12, 400, 1)
-                emg_sample = emg_sample.permute(0,2,1)  # shape: (B, C, 1*W*F) 
-
             gesture_pred = model(emg_sample)
             
             optimizer.zero_grad()
@@ -134,10 +129,6 @@ def train_process(args,model,model_PATH,train_loader,valid_loader,device,optimiz
             for i, (emg_sample, gesture_gold) in enumerate(valid_loader):
                 emg_sample = emg_sample.to(device) # input
 
-                if args.model_type == "ViT":
-                    # emg_sample = torch.unsqueeze(emg_sample.permute(0,2,1), dim=3)  # shape: (B, C, W, F) = (128, 12, 400, 1)
-                    emg_sample = emg_sample.permute(0,2,1)  # shape: (B, C, 1*W*F)
-
                 gesture_gold = gesture_gold.to(device) # Output
                 gesture_pred = model(emg_sample)
 
@@ -157,7 +148,7 @@ def train_process(args,model,model_PATH,train_loader,valid_loader,device,optimiz
         # progress.update(task1, advance=1,description="[cyan][Epoch: %3d] [Train loss: %3.3f acc: %3.2f %%] [Valid loss: %3.3f acc: %3.2f %%]" 
         #                 %(epoch+1, running_loss_train/n_train, 100*running_acc_train/n_train, running_loss_valid/n_valid, 100*running_acc_valid/n_valid))
         print("[Epoch: %3d / %d] [Train loss: %3.3f acc: %4.2f] [Valid loss: %3.3f acc: %4.2f]" 
-                        %(epoch+1, args.num_epoch, running_loss_train/n_train, 100*running_acc_train/n_train, running_loss_valid/n_valid, 100*running_acc_valid/n_valid),  end=end_type, flush=True)
+                        %(epoch+1, num_epoch, running_loss_train/n_train, 100*running_acc_train/n_train, running_loss_valid/n_valid, 100*running_acc_valid/n_valid),  end=end_type, flush=True)
 
         # Save model or not 
         if running_loss_valid < loss_best:
@@ -167,7 +158,7 @@ def train_process(args,model,model_PATH,train_loader,valid_loader,device,optimiz
             not_better_count = 0
         else:
             not_better_count = not_better_count+1
-        if not_better_count > 500 and epoch>30:
+        if not_better_count > 200 and epoch>100:
             break
         if scheduler is not None:
             scheduler.step()
@@ -176,8 +167,8 @@ def train_process(args,model,model_PATH,train_loader,valid_loader,device,optimiz
     print("Elasped training time: ", t_end - t_start)    
                 
 
-def test_process(model,model_PATH,test_loader,device,criterion,load_model,model_type):
-    if load_model == True:
+def test_process(model,model_PATH,test_loader,device,criterion,model_type,load_model=None):
+    if load_model is not None:
         print("model_PATH: ",model_PATH)
         model.load_state_dict(torch.load(model_PATH))
         
@@ -197,10 +188,6 @@ def test_process(model,model_PATH,test_loader,device,criterion,load_model,model_
         for i, (emg_sample, gesture_gold) in enumerate(test_loader):
             emg_sample = emg_sample.to(device) # input
             gesture_gold = gesture_gold.to(device) # Output
-
-            if model_type == "ViT":
-                # emg_sample = torch.unsqueeze(emg_sample.permute(0,2,1), dim=3)  # shape: (B, C, W, F) = (128, 12, 400, 1)
-                emg_sample = emg_sample.permute(0,2,1)  # shape: (B, C, 1*W*F)
             gesture_pred = model(emg_sample)
 
             y_pred.extend(gesture_pred.argmax(dim=-1).view(-1).detach().cpu().numpy())       # 將preds預測結果detach出來，並轉成numpy格式       
@@ -219,4 +206,4 @@ def test_process(model,model_PATH,test_loader,device,criterion,load_model,model_
     # Print the model summary
     # summary(model, (emg_sample.shape[1:]))
 
-    # return y_pred, y_gold
+    return np.array(y_pred), np.array(y_gold)

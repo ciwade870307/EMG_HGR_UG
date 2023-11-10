@@ -26,6 +26,9 @@ import multiprocessing as mp
 import os
 import scipy.signal as signal
 import time
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
+from plot import *
 
 # User-defined
 from mat2np_segment_all_subject import *
@@ -41,28 +44,40 @@ set_seed(87)
 
 # Parameter setup
 args = get_args()
+print_args(args)
 window_size, window_step, number_gesture, model_PATH, device = get_args_info(args)
 
 # Dataset setup
 train_loader, valid_loader, test_loader = train_test_split_DataLoader(\
                                         batch_size=args.batch_size, subject_list=args.subject_list, exercise_list= args.exercise_list, \
                                         fs=args.fs, window_size=window_size, window_step=window_step, num_channel=args.num_channel, \
-                                        feat_extract=args.feat_extract, class_rest=args.class_rest)
+                                        feat_extract=args.feat_extract, class_rest=args.class_rest, type_filter = args.type_filter, type_norm = args.type_norm, \
+                                        load_dataset = args.load_dataset, save_dataset = args.save_dataset)
 
-if args.model_type == "ViT":
+# if args.model_type == "ViT":
+if "ViT" in args.model_type:
+    
+    # num_patch = args.num_channel
+    # patch_size = window_size
+    # model = ViT(num_patch,patch_size).to(device)
+
     # TNet
-    num_patch = args.num_channel
-    patch_size = window_size
-    model = ViT(num_patch,patch_size).to(device)
+    # model = ViT_TNet(window_size, args.num_channel).to(device)
+    model = eval(f"{args.model_type}(window_size, args.num_channel,number_gesture=number_gesture, class_rest=args.class_rest)").to(device)
 else:
     model = eval(f"{args.model_type}(number_gesture=number_gesture, class_rest=args.class_rest)").to(device)
+
 optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=0.00)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=25, T_mult=2, eta_min=1e-6, verbose=True)
 criterion = nn.CrossEntropyLoss()
 
 # Model Training and Validation
 if args.en_train:
-    train_process(args,model,model_PATH,train_loader,valid_loader,device,optimizer,criterion, scheduler=scheduler)
+    train_process(args.num_epoch,model,model_PATH,train_loader,valid_loader,device,optimizer,criterion, scheduler=scheduler)
 
 # Model Testing
-test_process(model,model_PATH,test_loader,device,criterion,args.load_model,args.model_type)
+y_pred, y_gold = test_process(model,model_PATH,test_loader,device,criterion,args.model_type, args.load_model)
+
+# Plot confusion matrix
+plot_cm(y_gold, y_pred, args.log_name)
+

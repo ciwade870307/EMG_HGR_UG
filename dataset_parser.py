@@ -25,8 +25,8 @@ def dataset_filter_normalize_segementation(fileName, fs=2000, window_size = 400,
     emg_sample = np.load(fileName)
 
     # Filtering and Normalization
-    emg_sample_filter = filter(emg_sample,type_filter="BPF_20_200", fs=fs, order=3)    # whole_window_size * num_channel (e.g., LPF_200_, HPF_20_, ...)
-    emg_sample_filter_norm = normalization(emg_sample_filter, type_norm="mvc", mu=256)
+    emg_sample_filter = filter(emg_sample,type_filter=type_filter, fs=fs, order=3)    # whole_window_size * num_channel (e.g., LPF_200_, HPF_20_, ...)
+    emg_sample_filter_norm = normalization(emg_sample_filter, type_norm=type_norm)
 
     # Sliding window segmentation
     num_window = (np.floor((emg_sample_filter_norm.shape[0]-window_size)/window_step) + 1).astype(int)
@@ -48,7 +48,7 @@ def dataset_filter_normalize_segementation(fileName, fs=2000, window_size = 400,
 
 def dataset_filter_normalize_segementation_all_subject_exercise(dataset_type="train", subject_list = [i+1 for i in range(40)], \
                                                                 exercise_list = [1,2,3], fs=2000, window_size = 400, window_step=200, num_channel=12, class_rest=False, \
-                                                                    type_filter = "none", type_norm = "mvc"):
+                                                                type_filter = "none", type_norm = "mvc"):
     if dataset_type == "test":
         trial_list = [2,5]
     else: 
@@ -111,7 +111,8 @@ def dataset_filter_normalize_segementation_all_subject_exercise(dataset_type="tr
 
 class DB2_Dataset(Dataset):
     def __init__(self, dataset_type="train", subject_list = [i+1 for i in range(40)], exercise_list = [1,2,3],fs=2000, \
-                window_size = 400, window_step=200, num_channel=12, feat_extract=False, class_rest=False, load_dataset=True, save_dataset=False):
+                window_size = 400, window_step=200, num_channel=12, feat_extract=False, class_rest=False, type_filter = "none", type_norm = "mvc",\
+                load_dataset=True, save_dataset=False):
         
         if load_dataset:
             print(f"Loading saved {dataset_type} dataset in ./Dataset/DB2/")
@@ -119,7 +120,8 @@ class DB2_Dataset(Dataset):
             gesture_label_dataset = np.load(f"Dataset/DB2/gesture_label_dataset_{dataset_type}.npy")
         else:
             emg_sample_dataset, gesture_label_dataset = dataset_filter_normalize_segementation_all_subject_exercise(\
-                dataset_type=dataset_type,subject_list=subject_list, exercise_list=exercise_list, fs=fs, window_size=window_size, window_step=window_step, num_channel=num_channel,class_rest=class_rest)
+                dataset_type=dataset_type,subject_list=subject_list, exercise_list=exercise_list, fs=fs, window_size=window_size, window_step=window_step, \
+                num_channel=num_channel,class_rest=class_rest, type_filter = type_filter, type_norm = type_norm)
             if save_dataset:
                 np.save(f"Dataset/DB2/emg_sample_dataset_{dataset_type}",emg_sample_dataset)
                 np.save(f"Dataset/DB2/gesture_label_dataset_{dataset_type}",gesture_label_dataset)
@@ -139,18 +141,18 @@ class DB2_Dataset(Dataset):
 
 def train_test_split_DataLoader(batch_size = 256, subject_list = [i+1 for i in range(40)], exercise_list=[1,2,3], fs=2000, \
                                 window_size = 400, window_step=200, num_channel=12, feat_extract = False, class_rest = False, \
-                                load_dataset = False, save_dataset = False):
+                                type_filter = "none", type_norm = "none", load_dataset = False, save_dataset = False):
     print("\n"+"-"*70)
     # Load the DB2 datase 
     dataset_train = DB2_Dataset(dataset_type="train", subject_list=subject_list, feat_extract=feat_extract, exercise_list=exercise_list, fs=fs, \
                                 window_size=window_size, window_step=window_step, num_channel=num_channel, class_rest = class_rest, \
-                                load_dataset=load_dataset, save_dataset=save_dataset)
+                                type_filter = type_filter, type_norm = type_norm, load_dataset=load_dataset, save_dataset=save_dataset)
     dataset_valid = DB2_Dataset(dataset_type="valid", subject_list=subject_list, feat_extract=feat_extract, exercise_list=exercise_list, fs=fs, \
                                 window_size=window_size, window_step=window_step, num_channel=num_channel, class_rest = class_rest, \
-                                load_dataset=load_dataset, save_dataset=save_dataset)
+                                type_filter = type_filter, type_norm = type_norm, load_dataset=load_dataset, save_dataset=save_dataset)
     dataset_test  = DB2_Dataset(dataset_type="test",  subject_list=subject_list, feat_extract=feat_extract, exercise_list=exercise_list, fs=fs, \
                                 window_size=window_size, window_step=window_step, num_channel=num_channel, class_rest = class_rest, \
-                                load_dataset=load_dataset, save_dataset=save_dataset)
+                                type_filter = type_filter, type_norm = type_norm, load_dataset=load_dataset, save_dataset=save_dataset)
     print("-"*70)
     print("Number of train data: %5d" %(len(dataset_train)))
     print("Number of valid data: %5d" %(len(dataset_valid)))

@@ -17,16 +17,18 @@ import os
 import scipy.signal as signal
 
 class DNN_feature(nn.Module):
-    def __init__(self, number_gesture=49, class_rest=False):
+    def __init__(self, number_gesture=49, class_rest=False, dropout=0.4):
         super(DNN_feature, self).__init__()
         output_class = number_gesture + int(class_rest==True)
         self.layers = nn.Sequential(
             # nn.BatchNorm1d(12),
             nn.Linear(59, 128),
             nn.LeakyReLU(),
+            nn.Dropout(dropout),
             # nn.BatchNorm1d(128),
             nn.Linear(128, 64),
             nn.LeakyReLU(),
+            nn.Dropout(dropout),
             # nn.BatchNorm1d(64),
             # nn.Linear(64, 32),
             # nn.LeakyReLU(),
@@ -41,7 +43,7 @@ class DNN_feature(nn.Module):
         return self.layers(x)
     
 class CNN(nn.Module):
-    def __init__(self, number_gesture=49, class_rest=False):
+    def __init__(self, number_gesture=49, class_rest=False, dropout=0.4):
         super(CNN, self).__init__()
         output_class = number_gesture + int(class_rest==True)
         self.layers = nn.Sequential(
@@ -58,7 +60,11 @@ class CNN(nn.Module):
             nn.ReLU(),
             nn.MaxPool2d((2,2)),
             nn.Flatten(),
-            nn.Linear(576, output_class)
+            nn.Dropout(dropout),
+            nn.Linear(576,128),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(128, output_class)
             # nn.Linear(64, output_class)
         )
         self.conv = nn.Conv2d(1, 16, kernel_size=(3,3), stride=(1,1), padding='same')

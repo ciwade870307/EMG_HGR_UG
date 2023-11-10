@@ -76,6 +76,7 @@ def get_args(raw_args=None):
     parser.add_argument("--feat_extract", action='store_true', default=False)
     parser.add_argument("--load_dataset", action='store_true', default=False)
     parser.add_argument("--save_dataset", action='store_true', default=False)
+    parser.add_argument("--log_name", default='Lastest_results')
 
     if raw_args is None:
         args = parser.parse_args()
@@ -87,10 +88,10 @@ def get_args(raw_args=None):
 def get_args_info(args):
     window_size = int(args.window_size_sec * args.fs) # 200 ms => 0.2 * fs = 400 sample points
     window_step = int(args.window_step_sec * args.fs) # 100 ms => 0.1 * fs = 200 sample points
-    model_PATH = f'./Models/{args.model_type}_model.pth'
+    model_PATH = f'./Results/{args.log_name}/{args.model_type}.pth' 
     exercise_list_np = np.array(args.exercise_list)
     number_gesture = int(np.any(exercise_list_np==1))*17 + int(np.any(exercise_list_np==2))*23 + int(np.any(exercise_list_np==3))*9
-    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    device = "cuda" if torch.cuda.is_available() else "cpu"
 
     print("\n"+"="*70)
 
@@ -122,6 +123,15 @@ def get_args_info(args):
     print("", flush=True)
 
     return window_size, window_step, number_gesture, model_PATH, device
+
+def print_args(args):
+
+    print("\n"+"="*25+" Print all args value "+"="*25)
+    for key, value in vars(args).items():
+        print(f"{key} = {value}")
+
+    print("="*70)
+    print("", flush=True)
 
 def set_seed(seed):
     np.random.seed(seed)
