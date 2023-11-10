@@ -15,7 +15,7 @@ python3 mat2np_segment_all_subject.py
 ```
 python3 main_develop_DB2.py
 ```
-or you can use the `run.sh` script for detail argument setup as
+or you can use the `run.sh` or `run_{model_type}.sh` script for detail argument setup as
 ```
 ./run.sh
 ```
