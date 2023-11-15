@@ -1,19 +1,20 @@
 # timestamp=$(date +%Y%m%d_%H%M)
-model_name=ViT_TNet
+# model_name=ViT_TNet
+model_name=ViT_TraHGR
 current_time=$(date +%Y%m%d_%H%M)
 log_name="${model_name}_${current_time}"
 mkdir -p Results/$log_name
 
-CUDA_VISIBLE_DEVICES=0 \
+CUDA_VISIBLE_DEVICES=1 \
 python3 main_intra_subject.py \
+--subject_list 4 \
 --exercise_list 1,2,3 \
 --window_size_sec 0.2  \
---window_step_sec 0.1 \
---num_epoch 100 \
+--window_step_sec 0.01 \
+--num_epoch 1000 \
 --batch_size 512 \
---pretrain_model_PATH Results/ViT_TNet_20231114_1138_Pretrain_on_all_subject/ViT_TNet.pth \
 --model_type $model_name \
---lr 0.001 \
+--lr 0.0001 \
 --en_train \
 --type_filter none \
 --type_norm standardization \

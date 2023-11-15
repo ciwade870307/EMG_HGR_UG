@@ -25,7 +25,8 @@ def dataset_filter_normalize_segementation(fileName, fs=2000, window_size = 400,
     emg_sample = np.load(fileName)
 
     # Filtering and Normalization
-    emg_sample_filter = filter(emg_sample,type_filter=type_filter, fs=fs, order=3)    # whole_window_size * num_channel (e.g., LPF_200_, HPF_20_, ...)
+    emg_sample_filter = filter(emg_sample,type_filter=type_filter, fs=fs, order=1)    # whole_window_size * num_channel (e.g., LPF_200_, HPF_20_, ...)
+    # emg_sample_filter_norm = normalization(emg_sample_filter, type_norm="standardization")
     emg_sample_filter_norm = normalization(emg_sample_filter, type_norm=type_norm)
 
     # Sliding window segmentation

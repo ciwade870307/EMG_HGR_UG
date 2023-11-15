@@ -32,6 +32,7 @@ class Attention(nn.Module):
     def __init__(self, dim, heads = 8, dim_head = 4, dropout = 0.):
         super().__init__()
         inner_dim = dim_head *  heads
+
         project_out = not (heads == 1 and dim_head == dim)
 
         self.heads = heads
@@ -136,7 +137,7 @@ class ViT(nn.Module):
 
 
 class ViT_TNet(nn.Module):
-    def __init__(self, window_size, num_channel, F=5, P=1 , dim=128, depth=1, heads=8, mlp_dim = 512, dropout = 0.3, emb_dropout = 0.3, pool = 'cls', number_gesture=49, class_rest=False):
+    def __init__(self, window_size, num_channel, F=5, P=1 , dim=144, depth=1, heads=8, mlp_dim = 720, dropout = 0.4, emb_dropout = 0.4, pool = 'cls', number_gesture=49, class_rest=False):
         super().__init__()
         assert pool in {'cls', 'mean'}, 'pool type must be either cls (cls token) or mean (mean pooling)'
         
@@ -180,7 +181,7 @@ class ViT_TNet(nn.Module):
 
         self.mlp_head = nn.Linear(dim, output_class)
 
-    def forward(self, x):
+    def get_class_emb(self, x):
         # input shape: (batch_size, window_size, num_channel) = (B, W, C)
         batch_size = x.shape[0]
 
@@ -201,11 +202,17 @@ class ViT_TNet(nn.Module):
         
         x = x.mean(dim = 1) if self.pool == 'mean' else x[:, 0]
 
+        return x
+    
+    def forward(self, x):
+
+        x = self.get_class_emb(x)
         x = self.to_latent(x)
+        
         return self.mlp_head(x)
 
 class ViT_FNet(nn.Module):
-    def __init__(self, window_size, num_channel, F=5, P=1 , dim=128, depth=1, heads=8, mlp_dim = 512, dropout = 0.3, emb_dropout = 0.3, pool = 'cls', number_gesture=49, class_rest=False):
+    def __init__(self, window_size, num_channel, F=5, P=5, Q=10, dim=144, depth=1, heads=8, mlp_dim = 720, dropout = 0.4, emb_dropout = 0.4, pool = 'cls', number_gesture=49, class_rest=False):
         super().__init__()
         assert pool in {'cls', 'mean'}, 'pool type must be either cls (cls token) or mean (mean pooling)'
         
@@ -213,14 +220,16 @@ class ViT_FNet(nn.Module):
 
         self.F = F  # F = output channels / input channels, in conv1d => like "F"iltering along time axis
         self.P = P  # P = num_patch / number_channel = patch_size * window_size, a scale factor to reshape the patch embedding
+        self.Q = Q
         self.num_channel = num_channel
         self.window_size = window_size
-        self.patch_size = window_size // (P*self.conv_max_pool_factor)
-        self.num_patch = num_channel * P * self.F
+        self.patch_size = self.P * self.Q
+        self.num_patch = (self.num_channel*self.F//self.P) * (self.window_size//(self.conv_max_pool_factor*self.Q))
         
         output_class = number_gesture + int(class_rest==True)
 
         self.conv = nn.Sequential(
+            nn.BatchNorm1d(num_channel),
             nn.Conv1d(num_channel, num_channel*F, kernel_size=9, padding='same'),
             nn.ReLU(),
             nn.MaxPool1d(self.conv_max_pool_factor),
@@ -248,14 +257,15 @@ class ViT_FNet(nn.Module):
 
         self.mlp_head = nn.Linear(dim, output_class)
 
-    def forward(self, x):
+    def get_class_emb(self, x):
         # input shape: (batch_size, window_size, num_channel) = (B, W, C)
         batch_size = x.shape[0]
 
         x = x.permute(0,2,1)  # shape: (B, W, C) -> shape: (B, C, W) 
         x = self.conv(x) # shape: (batch_size, F*num_channel, window_size/self.conv_max_pool_factor) = (B, F*C, W/self.conv_max_pool_factor)
         
-        x = x.reshape(batch_size, -1, self.patch_size)
+        # x = x.reshape(batch_size, -1, self.patch_size)
+        x = rearrange(x, 'b (c p) (w q) -> b (c w) (p q)', p = self.P, q = self.Q)
         x = self.to_patch_embedding(x)
         
 
@@ -269,5 +279,45 @@ class ViT_FNet(nn.Module):
         
         x = x.mean(dim = 1) if self.pool == 'mean' else x[:, 0]
 
+        return x
+    
+    def forward(self, x):
+
+        x = self.get_class_emb(x)
         x = self.to_latent(x)
+        
         return self.mlp_head(x)
+
+        
+class ViT_TraHGR(nn.Module):
+    def __init__(self, window_size, num_channel, F=5, Pt=1, Pf=5, Qf=10, dim=144, depth=1, heads=8, mlp_dim = 720, dropout = 0.2, emb_dropout = 0.2, pool = 'cls', number_gesture=49, class_rest=False):
+        super().__init__()
+        assert pool in {'cls', 'mean'}, 'pool type must be either cls (cls token) or mean (mean pooling)'
+        
+        output_class = number_gesture + int(class_rest==True)
+
+        self.ViT_TNet = ViT_TNet(window_size, num_channel, F=F, P=Pt , dim=dim, depth=depth, heads=heads, mlp_dim = mlp_dim, dropout = dropout, emb_dropout = emb_dropout, pool = pool, number_gesture=number_gesture, class_rest=class_rest)
+        self.ViT_FNet = ViT_FNet(window_size, num_channel, F=F, P=Pf, Q=Qf, dim=dim, depth=depth, heads=heads, mlp_dim = mlp_dim, dropout = dropout, emb_dropout = emb_dropout, pool = pool, number_gesture=number_gesture, class_rest=class_rest)
+
+        self.mlp_head_TNet = nn.Sequential(
+            nn.LayerNorm(dim),
+            nn.Linear(dim, output_class)
+        )
+
+        self.mlp_head_FNet = nn.Sequential(
+            nn.LayerNorm(dim),
+            nn.Linear(dim, output_class)
+        )
+
+        self.mlp_head_TraHGR = nn.Sequential(
+            nn.LayerNorm(dim),
+            nn.Linear(dim, output_class)
+        )
+
+
+    def forward(self, x):
+            
+        z_TNet = self.ViT_TNet.get_class_emb(x) # (num_batch, dim, 1)
+        z_FNet = self.ViT_FNet.get_class_emb(x) # (num_batch, dim, 1)
+
+        return self.mlp_head_TNet(z_TNet), self.mlp_head_FNet(z_FNet), self.mlp_head_TraHGR(z_TNet+z_FNet)

@@ -3,6 +3,30 @@ import numpy as np
 import torch
 import random
 
+def get_config_ViT():
+    config = {
+        "F": 5,
+        "Pt": 1,
+        "Pf": 5,
+        "Qf": 10,
+        "dim": 144,
+        "depth": 1,
+        "heads": 8,
+        "mlp_dim": 720,
+        "dropout": 0.4,
+        "emb_dropout": 0.0
+	}    
+    return config
+
+def print_config(config):
+
+    print("\n"+"="*25+" Print all config value "+"="*25)
+    for key in config:
+        print(f"config[\'{key}\'] = {config[key]}")
+
+    print("="*70)
+    print("", flush=True)
+
 def get_config():
     config = {
         # Scenario parameter
@@ -19,6 +43,7 @@ def get_config():
         "num_epoch": 1000,
         "batch_size": 512,
         "lr": 0.001,
+        "dropout_DNN": 0.4,
         # Other
         "database": "DB2",
         "model_type": "DNN_feature",
@@ -62,15 +87,17 @@ def get_args(raw_args=None):
     parser.add_argument("--window_size_sec", type=float, default=0.2)
     parser.add_argument("--window_step_sec", type=float, default=0.1)
     parser.add_argument("--type_filter", default='none')
-    parser.add_argument("--type_norm", default='mvc')
+    parser.add_argument("--type_norm", default='none')
     # Training parameter
     parser.add_argument("--num_epoch", type=int, default=1000)
     parser.add_argument("--batch_size", type=int, default=512)
     parser.add_argument("--lr", type=float, default=0.001)
+    parser.add_argument("--dropout_DNN", type=float, default=0.4)
     # Other
     parser.add_argument("--database", type = str, default='DB2')
     parser.add_argument("--model_type", default='DNN_feature')
     parser.add_argument("--en_train", action='store_true', default=False)
+    parser.add_argument("--pretrain_model_PATH", default='None')
     parser.add_argument("--load_model", default=True)
     parser.add_argument("--class_rest", action='store_true', default=False)
     parser.add_argument("--feat_extract", action='store_true', default=False)

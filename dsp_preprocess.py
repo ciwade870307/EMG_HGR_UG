@@ -14,7 +14,8 @@ def normalization(x, type_norm="mu_law"):
     if type_norm == "none":
         y = x
     elif type_norm == "mvc":    #  maximum voluntary contraction (MVC)
-        mvc = 0.002479567551179044 # search over all train dataset (current MVC: 4.088872887106668)
+        # mvc = 0.002479567551179044 # search over all train dataset (current MVC: 4.088872887106668)
+        mvc = 1e-5
         y = x/mvc
     elif type_norm == "standardization":
         mean = np.mean(x,axis=0)
@@ -26,7 +27,7 @@ def normalization(x, type_norm="mu_law"):
         y = (x - min_val)/(max_val-min_val)
     elif "mu_law" in type_norm:
         temp = type_norm.split("_")
-        mu = temp[-1]
+        mu = float(temp[-1])
         y = np.sign(x)*(np.log(1+mu*abs(x)))/(np.log(1+mu))
     else:
         raise TypeError(f'{type_norm} is not defined in type_norm')
@@ -46,6 +47,7 @@ def butter_filter(x, type_filter="highpass", cut_low=20, cut_high = 500, fs=2000
     return y
 
 def filter(x, type_filter="none", cut_low=20, cut_high = 200, fs=2000, order=3):
+    # x = np.abs(x)   # Rectified (?)
     if type_filter != 'none':
         type_filter_name, cut_low, cut_high = type_filter.split('_')
     else:
