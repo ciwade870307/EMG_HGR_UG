@@ -43,7 +43,7 @@ def get_config():
         "num_epoch": 1000,
         "batch_size": 512,
         "lr": 0.001,
-        "dropout_DNN": 0.4,
+        "dropout": 0.4,
         # Other
         "database": "DB2",
         "model_type": "DNN_feature",
@@ -92,7 +92,8 @@ def get_args(raw_args=None):
     parser.add_argument("--num_epoch", type=int, default=1000)
     parser.add_argument("--batch_size", type=int, default=512)
     parser.add_argument("--lr", type=float, default=0.001)
-    parser.add_argument("--dropout_DNN", type=float, default=0.4)
+    parser.add_argument("--dropout", type=float, default=0.4)
+    parser.add_argument("--isEarlyExit", default=False)
     # Other
     parser.add_argument("--database", type = str, default='DB2')
     parser.add_argument("--model_type", default='DNN_feature')

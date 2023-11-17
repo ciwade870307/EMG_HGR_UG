@@ -120,7 +120,7 @@ def train_process(num_epoch,model,model_PATH,train_loader,valid_loader,device,op
             not_better_count = 0
         else:
             not_better_count = not_better_count+1
-        if not_better_count > 50 and epoch>100:
+        if not_better_count > 50 and epoch>50:
             break
         if scheduler is not None:
             scheduler.step()
@@ -171,6 +171,7 @@ def test_process(model,model_PATH,test_loader,device,criterion,model_type,load_m
         print("[Test loss: %3.3f] [Test acc: %3.2f %%] " % (running_loss_test/n_test, acc_test), flush=True)
 
     # Print the model summary
+    summary(model)
     # summary(model, (emg_sample.shape[1:]))
 
     return np.array(y_pred), np.array(y_gold), acc_test.detach().item()

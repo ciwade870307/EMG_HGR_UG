@@ -31,19 +31,19 @@ def dataset_filter_normalize_segementation(fileName, fs=2000, window_size = 400,
 
     # Sliding window segmentation
     num_window = (np.floor((emg_sample_filter_norm.shape[0]-window_size)/window_step) + 1).astype(int)
-    emg_sample_filter_norm_seg_batch = None
-    gesture_label_batch = None
-    # emg_sample_filter_norm_seg_batch = np.zeros((num_window, window_size, num_channel))
-    # gesture_label_batch = np.zeros((num_window, 1))
+    # emg_sample_filter_norm_seg_batch = None
+    # gesture_label_batch = None
+    emg_sample_filter_norm_seg_batch = np.zeros((num_window, window_size, num_channel))
+    gesture_label_batch = np.zeros((num_window, 1))
 
     for i in range(num_window):
         emg_sample_filter_norm_seg = emg_sample_filter_norm[i*window_step:i*window_step+window_size]
-        emg_sample_filter_norm_seg_batch = handle_concatenation(emg_sample_filter_norm_seg_batch, emg_sample_filter_norm_seg.reshape(1,window_size,-1), axis=0)
-        gesture_label_batch = handle_concatenation(gesture_label_batch, gesture_label.reshape(1,-1), axis=0)
+        # emg_sample_filter_norm_seg_batch = handle_concatenation(emg_sample_filter_norm_seg_batch, emg_sample_filter_norm_seg.reshape(1,window_size,-1), axis=0)
+        # gesture_label_batch = handle_concatenation(gesture_label_batch, gesture_label.reshape(1,-1), axis=0)
         
-        # num_sample = emg_sample_filter_norm_seg.shape[0]
-        # emg_sample_filter_norm_seg_batch[i] = emg_sample_filter_norm_seg
-        # gesture_label_batch[i] = gesture_label
+        num_sample = emg_sample_filter_norm_seg.shape[0]
+        emg_sample_filter_norm_seg_batch[i] = emg_sample_filter_norm_seg
+        gesture_label_batch[i] = gesture_label
 
     return emg_sample_filter_norm_seg_batch, gesture_label_batch  #shape: (num_window, window_size, num_channel); #shape: (num_window,1)
 

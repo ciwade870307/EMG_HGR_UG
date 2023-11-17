@@ -38,6 +38,8 @@ from models import *
 from feature_extractor import *
 from set_args import *
 from train_test_process import *
+from dnn import *
+from cnn import *
 from vit import *
 
 set_seed(87)
@@ -72,14 +74,18 @@ for current_subject in args.subject_list:
                                 dim=config['dim'], depth=config['depth'], heads=config['heads'], mlp_dim = config['mlp_dim'], \
                                 dropout = config['dropout'], emb_dropout = config['emb_dropout'], number_gesture=number_gesture, class_rest=args.class_rest).to(device)
         else:
-            model = eval(f"{args.model_type}(window_size, args.num_channel,number_gesture=number_gesture, dropout=args.dropout_DNN, class_rest=args.class_rest)").to(device)
+            model = eval(f"{args.model_type}(window_size, args.num_channel,number_gesture=number_gesture, dropout=args.dropout, class_rest=args.class_rest)").to(device)
+            
         # optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.001)
         optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=0.001)
         # scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=25, T_mult=2, eta_min=1e-5, verbose=False)
         scheduler = None
         criterion = nn.CrossEntropyLoss()
     else:
-        model = eval(f"{args.model_type}(number_gesture=number_gesture, class_rest=args.class_rest)").to(device)
+        if args.model_type == "CNN_Early_Late":
+            model = CNN_Early_Late(number_gesture=number_gesture, class_rest=args.class_rest, dropout=args.dropout, isEarlyExit=args.isEarlyExit).to(device)
+        else:
+            model = eval(f"{args.model_type}(number_gesture=number_gesture, class_rest=args.class_rest, dropout=args.dropout)").to(device)
         optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
         scheduler = None
         criterion = nn.CrossEntropyLoss()     
